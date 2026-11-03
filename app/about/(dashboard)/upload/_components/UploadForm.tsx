@@ -125,14 +125,14 @@ const UploadForm = () => {
       )}
 
       {/* Upload Button */}
-      <button
-        onClick={uploadBtnClick}
-        disabled={loading}
-        className="px-8 py-3 bg-blue-600 text-white rounded-lg
-        hover:bg-blue-700 disabled:opacity-50"
-      >
-        {loading ? "Uploading..." : "Upload File"}
-      </button>
+  <button
+  type="button"
+  onClick={uploadBtnClick}
+  disabled={loading}
+  className="px-8 py-3 bg-blue-600 text-white rounded-lg disabled:opacity-50"
+>
+  {loading ? "Uploading..." : "Upload File"}
+</button>    
     </div>
   );
 };

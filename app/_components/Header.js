@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -18,13 +19,13 @@ function Header() {
 
           {/* LOGO */}
           <Link href="/" className="flex items-center gap-2">
-           <Image
-  src="/logo-frnt.svg"
-  alt="Logo"
-  width={150}
-  height={50}
-  style={{ width: "150px", height: "auto" }}
-/>
+            <Image
+              src="/logo-frnt.svg"
+              alt="Logo"
+              width={150}
+              height={50}
+              style={{ width: "150px", height: "auto" }}
+            />
           </Link>
 
           {/* DESKTOP NAV */}
@@ -32,14 +33,25 @@ function Header() {
             <Link href="/" className="text-blue-700 hover:text-rose-500">
               Home
             </Link>
+
             <Link href="/about" className="text-blue-700 hover:text-rose-500">
               About Us
             </Link>
+
             <Link href="/careers" className="text-blue-700 hover:text-rose-500">
               Careers
             </Link>
+
             <Link href="/contact" className="text-blue-700 hover:text-rose-500">
               Contact Us
+            </Link>
+
+            {/* UPLOAD BUTTON */}
+            <Link
+              href="/upload"
+              className="px-5 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition"
+            >
+              Upload
             </Link>
           </nav>
 

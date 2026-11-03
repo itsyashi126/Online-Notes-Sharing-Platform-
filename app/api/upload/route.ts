@@ -30,28 +30,29 @@ export async function POST(req: Request) {
 
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: "Unauthorized. Please sign in." },
+        { success: false, error: "Please sign in first." },
         { status: 401 }
       );
     }
 
-    // 2. Read form data
+    // 2. Get form data
     const formData = await req.formData();
 
     const fileEntry = formData.get("file");
     const titleEntry = formData.get("title");
     const notesUrlEntry = formData.get("notesUrl");
 
+    // 3. Validate file and title
     if (!(fileEntry instanceof File)) {
       return NextResponse.json(
-        { success: false, error: "Please select a valid file." },
+        { success: false, error: "Please select a file." },
         { status: 400 }
       );
     }
 
     if (typeof titleEntry !== "string" || !titleEntry.trim()) {
       return NextResponse.json(
-        { success: false, error: "Title is required." },
+        { success: false, error: "Please enter a file title." },
         { status: 400 }
       );
     }
@@ -60,11 +61,12 @@ export async function POST(req: Request) {
 
     if (title.length > 150) {
       return NextResponse.json(
-        { success: false, error: "Title cannot exceed 150 characters." },
+        { success: false, error: "Title must be under 150 characters." },
         { status: 400 }
       );
     }
 
+    // 4. Validate optional notes URL
     const notesUrl =
       typeof notesUrlEntry === "string" ? notesUrlEntry.trim() : "";
 
@@ -73,17 +75,17 @@ export async function POST(req: Request) {
         const parsedUrl = new URL(notesUrl);
 
         if (!["http:", "https:"].includes(parsedUrl.protocol)) {
-          throw new Error("Invalid protocol");
+          throw new Error("Invalid URL");
         }
       } catch {
         return NextResponse.json(
-          { success: false, error: "Please provide a valid notes URL." },
+          { success: false, error: "Please enter a valid notes URL." },
           { status: 400 }
         );
       }
     }
 
-    // 3. Validate file size
+    // 5. Validate file size
     if (fileEntry.size === 0) {
       return NextResponse.json(
         { success: false, error: "The selected file is empty." },
@@ -93,12 +95,12 @@ export async function POST(req: Request) {
 
     if (fileEntry.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { success: false, error: "File size must not exceed 10 MB." },
+        { success: false, error: "File size must be less than 10 MB." },
         { status: 400 }
       );
     }
 
-    // 4. Validate file type and extension
+    // 6. Validate file type
     const extension =
       "." + (fileEntry.name.split(".").pop() || "").toLowerCase();
 
@@ -106,22 +108,19 @@ export async function POST(req: Request) {
 
     if (!validExtensions || !validExtensions.includes(extension)) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Unsupported file type. Upload PDF, DOC, DOCX, PPT, PPTX, JPG, PNG or WEBP.",
-        },
+        { success: false, error: "Unsupported file type." },
         { status: 400 }
       );
     }
 
-    // 5. Connect to MongoDB
+    // 7. Connect MongoDB
     await connectDB();
 
-    // 6. Convert file into buffer
+    // 8. Convert file into buffer
     const bytes = await fileEntry.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // 7. Upload to Cloudinary
+    // 9. Upload file to Cloudinary
     const uploadResult = await new Promise<{
       secure_url: string;
       public_id: string;
@@ -134,14 +133,18 @@ export async function POST(req: Request) {
             resource_type: "auto",
           },
           (error, result) => {
-            if (error) return reject(error);
+            if (error) {
+              return reject(error);
+            }
 
             if (
               !result?.secure_url ||
               !result.public_id ||
               !result.resource_type
             ) {
-              return reject(new Error("Invalid Cloudinary response"));
+              return reject(
+                new Error("Invalid response received from Cloudinary.")
+              );
             }
 
             resolve({
@@ -157,7 +160,7 @@ export async function POST(req: Request) {
     uploadedPublicId = uploadResult.public_id;
     uploadedResourceType = uploadResult.resource_type;
 
-    // 8. Save note details in MongoDB
+    // 10. Save file details in MongoDB
     const savedData = await Upload.create({
       title,
       notesUrl,
@@ -166,18 +169,20 @@ export async function POST(req: Request) {
       userId,
     });
 
+    // 11. Send success response
     return NextResponse.json(
       {
         success: true,
-        message: "File uploaded successfully.",
+        message: "File uploaded successfully!",
         data: savedData,
       },
       { status: 201 }
     );
-  } catch (error) {
+
+  } catch (error: unknown) {
     console.error("UPLOAD API ERROR:", error);
 
-    // 9. Clean up Cloudinary file if database saving fails
+    // Remove Cloudinary file if database saving fails
     if (uploadedPublicId && uploadedResourceType) {
       try {
         await cloudinary.uploader.destroy(uploadedPublicId, {
@@ -188,10 +193,16 @@ export async function POST(req: Request) {
       }
     }
 
+    const errorMessage =
+      error instanceof Error ? error.message : String(error);
+
     return NextResponse.json(
       {
         success: false,
-        error: "Something went wrong while uploading your file.",
+        error:
+          process.env.NODE_ENV === "development"
+            ? errorMessage
+            : "Something went wrong while uploading your file.",
       },
       { status: 500 }
     );
