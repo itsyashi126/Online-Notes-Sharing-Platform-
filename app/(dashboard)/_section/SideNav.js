@@ -26,13 +26,13 @@ function SideNav() {
 
       {/* LOGO */}
       <div className="p-5 border-b">
-        <Image
-          src="/logo-frnt.svg"
-          width={300}
-          height={200}
-          alt="Logo"
-          className="mx-auto"
-        />
+       <Image
+  src="/logo-frnt.svg"
+  alt="Logo"
+  width={150}
+  height={50}
+  style={{ width: "150px", height: "auto" }}
+/>
       </div>
 
       {/* MENU */}

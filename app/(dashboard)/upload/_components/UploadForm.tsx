@@ -1,27 +1,34 @@
+
 "use client";
 
 import React, { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
 
-const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 const UploadForm = () => {
   const { user } = useUser();
+
   const [file, setFile] = useState<File | null>(null);
+  const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
 
   const uploadBtnClick = async () => {
     if (!user) return alert("Please sign in to upload files");
+    if (!title.trim()) return alert("Please enter a title");
     if (!file) return alert("Please select a file first");
-    if (file.size > MAX_SIZE)
-      return alert("File size must be less than 2MB");
+
+    if (file.size > MAX_SIZE) {
+      return alert("File size must be less than 10MB");
+    }
 
     try {
       setLoading(true);
 
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("title", title.trim());
 
       const res = await fetch("/api/upload", {
         method: "POST",
@@ -29,12 +36,20 @@ const UploadForm = () => {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
+
+      if (!res.ok) {
+        throw new Error(data.error || "Upload failed");
+      }
 
       alert("File uploaded successfully!");
+
       setFile(null);
-    } catch (err: any) {
-      alert(err.message || "Upload failed");
+      setTitle("");
+
+      // Refresh server-rendered data if the page uses it.
+      window.location.reload();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setLoading(false);
     }
@@ -42,8 +57,19 @@ const UploadForm = () => {
 
   return (
     <div className="flex flex-col items-center w-full gap-6">
+
+      {/* Title */}
+      <input
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        placeholder="Enter notes title"
+        maxLength={150}
+        className="w-[75%] border rounded-lg p-3 outline-none focus:border-blue-500"
+      />
+
       {/* Dropzone */}
-      <div className="flex items-center justify-center w-[75%] h-[75%]">
+      <div className="flex items-center justify-center w-[75%]">
         <label
           htmlFor="dropzone-file"
           className="flex flex-col items-center justify-center w-full h-64
@@ -69,14 +95,16 @@ const UploadForm = () => {
             <p className="text-lg font-semibold">
               Click to upload or drag & drop
             </p>
+
             <p className="text-sm text-rose-500 mt-1">
-              PNG, JPG, PDF (Max 2MB)
+              PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, WEBP (Max 10MB)
             </p>
           </div>
 
           <input
             id="dropzone-file"
             type="file"
+            accept=".pdf,.doc,.docx,.ppt,.pptx,.png,.jpg,.jpeg,.webp"
             className="hidden"
             onChange={(e) => setFile(e.target.files?.[0] || null)}
           />
@@ -85,11 +113,10 @@ const UploadForm = () => {
 
       {/* File Preview */}
       {file && (
-        <div className="flex items-center gap-4 w-[75%] p-4
-        border rounded-lg bg-white shadow">
+        <div className="flex items-center gap-4 w-[75%] p-4 border rounded-lg bg-white shadow">
           <Image
-            src="/files.png"   // place file.png inside /public folder
-            alt="file icon"
+            src="/files.png"
+            alt="File icon"
             width={50}
             height={50}
           />
@@ -101,7 +128,7 @@ const UploadForm = () => {
       <button
         onClick={uploadBtnClick}
         disabled={loading}
-        className="px-8 py-3 bg-yellow-00 text-white rounded-lg
+        className="px-8 py-3 bg-blue-600 text-white rounded-lg
         hover:bg-blue-700 disabled:opacity-50"
       >
         {loading ? "Uploading..." : "Upload File"}

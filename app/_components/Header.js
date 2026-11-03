@@ -18,12 +18,13 @@ function Header() {
 
           {/* LOGO */}
           <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/logo-frnt.svg"
-              width={280}
-              height={280}
-              alt="logo"
-            />
+           <Image
+  src="/logo-frnt.svg"
+  alt="Logo"
+  width={150}
+  height={50}
+  style={{ width: "150px", height: "auto" }}
+/>
           </Link>
 
           {/* DESKTOP NAV */}
